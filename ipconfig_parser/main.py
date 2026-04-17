@@ -58,7 +58,9 @@ def main():
         data = Path(path.name).read_text(encoding="utf-16")
         objs.append(parse_ipconfig(path.name, data))
 
-    print(json.dumps(objs, sort_keys=True, indent=2))
+    print(json.dumps(objs, indent=2, ensure_ascii=False))
+    with open("output.json", "w", encoding="utf-16") as wf:
+        json.dump(objs, wf, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
