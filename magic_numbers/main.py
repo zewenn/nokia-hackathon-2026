@@ -13,7 +13,7 @@ def next_magic_number_array(base_number: Tuple[int, ...]):
     left_index = middle_index - 1
     right_index = middle_index + 1 if (length % 2 == 1) else middle_index
 
-    result: List[int] = list(base_number[:])
+    result: List[int] = list(base_number)
 
     flag = False
 
@@ -21,7 +21,8 @@ def next_magic_number_array(base_number: Tuple[int, ...]):
         left_index -= 1
         right_index += 1
 
-        if right_index >= length:
+        if right_index >= length and left_index == -1:
+            left_smaller_than_right = True
             break
 
         if result[left_index] == result[right_index] and not flag:
@@ -33,30 +34,29 @@ def next_magic_number_array(base_number: Tuple[int, ...]):
         flag = True
         result[right_index] = result[left_index]
 
-    if left_index < 0:
-        left_smaller_than_right = True
-
     if left_smaller_than_right:
         carry = 1
         left_index = middle_index - 1
+        right_index = middle_index
 
         if length % 2 == 1:
             result[middle_index] += carry
             carry = result[middle_index] // 10
-            result[middle_index] %= 10
+            result[middle_index] = result[middle_index] % 10
+
             right_index = middle_index + 1
-        else:
-            right_index = middle_index
 
         while left_index >= 0:
             result[left_index] += carry
             carry = result[left_index] // 10
-            result[left_index] %= 10
+            result[left_index] = result[left_index] % 10
+
             result[right_index] = result[left_index]
+
             right_index += 1
             left_index -= 1
 
-    return result[:]
+    return result
 
 
 def next_magic_number(base: Tuple[int, ...]) -> int:
@@ -65,8 +65,6 @@ def next_magic_number(base: Tuple[int, ...]) -> int:
 
 def main():
     data = Path("input.txt").read_text(encoding="utf-8")
-
-    print(data, end="")
 
     for line in data.split("\n"):
         if line.strip() == "":
