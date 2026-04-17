@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 def main():
-    for path in sorted(Path(".").glob("*.log")):
+    for path in sorted(Path(".").glob("*.txt")):
         print(path.name)
 
 
