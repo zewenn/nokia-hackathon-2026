@@ -9,7 +9,7 @@ def next_magic_number_array(base_number: Tuple[int, ...]):
 
     length = len(base_number)
     middle_index = length // 2
-    left_smaller_than_right = False
+    left_smaller_than_right = True
     left_index = middle_index - 1
     right_index = middle_index + 1 if (length % 2 == 1) else middle_index
 
@@ -18,14 +18,9 @@ def next_magic_number_array(base_number: Tuple[int, ...]):
     flag = False
 
     while left_index >= 0:
-        left_index -= 1
-        right_index += 1
-
-        if right_index >= length and left_index == -1:
-            left_smaller_than_right = True
-            break
-
         if result[left_index] == result[right_index] and not flag:
+            left_index -= 1
+            right_index += 1
             continue
 
         if not flag:
@@ -33,6 +28,9 @@ def next_magic_number_array(base_number: Tuple[int, ...]):
 
         flag = True
         result[right_index] = result[left_index]
+
+        left_index -= 1
+        right_index += 1
 
     if left_smaller_than_right:
         carry = 1
