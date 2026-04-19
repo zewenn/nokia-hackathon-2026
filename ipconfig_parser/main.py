@@ -1,66 +1,115 @@
-from pathlib import Path
-from typing import Dict, Optional, List
 import json
+from pathlib import Path
+from typing import List, Dict, Any
+
+json_keys = [
+    "description",
+    "physical_address",
+    "dhcp_enabled",
+    "ipv4_address",
+    "subnet_mask",
+    "default_gateway",
+    "dns_servers",
+]
+
+label_to_key = {
+    "Description": "description",
+    "Physical Address": "physical_address",
+    "DHCP Enabled": "dhcp_enabled",
+    "IPv4 Address": "ipv4_address",
+    "Autoconfiguration IPv4 Address": "ipv4_address",
+    "Subnet Mask": "subnet_mask",
+    "Default Gateway": "default_gateway",
+    "DNS Servers": "dns_servers",
+}
 
 
-def clean_key(key: str) -> str:
-    return key.replace(".", "").strip().lower().replace("-", "_").replace(" ", "_")
+def create_empty_adapter(name: str) -> Dict[str, Any]:
+    adapter = {"adapter_name": name}
+    for key in json_keys:
+        if key == "dns_servers":
+            adapter[key] = []  # type: ignore
+        else:
+            adapter[key] = ""
+    return adapter
 
 
-def parse_ipconfig(file_name: str, file_contents: str) -> Dict[str, str | List[str]]:
-    obj = {"file_name": file_name, "adapters": []}
-    current_adapter: Optional[Dict[str, str | List[str]]] = None
-    last_key: Optional[str] = None
+def parse_ipconfig_file(file_path: Path) -> Dict[str, Any]:
+    content = file_path.read_text(encoding="utf-16")
+    file_data = {"file_name": file_path.name, "adapters": []}
 
-    for line in file_contents.splitlines():
-        clean_line = line.strip()
-        if clean_line.strip() == "":
+    current_adapter = None
+    last_json_key = None
+
+    for line in content.splitlines():
+        if not line.strip():
             continue
 
-        if not (line.startswith(" ") or line.startswith("\t")) and clean_line.endswith(
-            ":"
+        if (
+            not line.startswith(" ")
+            and not line.startswith("\t")
+            and line.strip().endswith(":")
         ):
-            if current_adapter is not None:
-                obj["adapters"].append(current_adapter)
+            if current_adapter:
+                if not current_adapter["dns_servers"]:
+                    current_adapter["dns_servers"] = ""
+                file_data["adapters"].append(current_adapter)
 
-            current_adapter = {"adapter_name": clean_line[:-1]}
+            current_adapter = create_empty_adapter(line.strip()[:-1])
+            last_json_key = None
             continue
 
-        if line.startswith(" ") or line.startswith("\t"):
-            if current_adapter is None:
-                current_adapter = {"adapter_name": ""}
+        if current_adapter is not None:
+            if ":" in line:
+                parts = line.split(":", 1)
+                label = parts[0].replace(".", "").strip()
+                value = parts[1].strip()
 
-            if last_key is not None and not clean_line.__contains__(":"):
-                if type(current_adapter[last_key]) == str:
-                    current_adapter[last_key] = [current_adapter[last_key], clean_line]  # type: ignore
+                found_key = label_to_key.get(label)
 
-                current_adapter[last_key].append(clean_line)  # type: ignore
+                if found_key:
+                    if found_key in ["dns_servers", "default_gateway"]:
+                        if value:
+                            if found_key == "dns_servers":
+                                current_adapter[found_key].append(value)
+                            else:
+                                current_adapter[found_key] = value
+                    else:
+                        current_adapter[found_key] = value
+                    last_json_key = found_key
+                else:
+                    last_json_key = None
+            else:
+                if last_json_key in ["dns_servers", "default_gateway"]:
+                    val = line.strip()
+                    if val:
+                        if last_json_key == "dns_servers":
+                            current_adapter[last_json_key].append(val)
+                        else:
+                            current_adapter[last_json_key] += f" {val}"
 
-                continue
+    if current_adapter:
+        if not current_adapter["dns_servers"]:
+            current_adapter["dns_servers"] = ""
+        file_data["adapters"].append(current_adapter)
 
-            if not line.__contains__(":"):
-                continue
-
-            data: List[str] = clean_line.split(":", 1)
-            key = clean_key(data[0])
-            value = data[1].strip()
-
-            current_adapter[key] = value
-            last_key = key
-
-    return obj
+    return file_data
 
 
 def main():
-    objs: List[Dict[str, str | List[str]]] = []
+    all_results = []
 
     for path in sorted(Path(".").glob("*.txt")):
-        data = Path(path.name).read_text(encoding="utf-16")
-        objs.append(parse_ipconfig(path.name, data))
+        if path.name == "requirements.txt":
+            continue
 
-    print(json.dumps(objs, indent=2, ensure_ascii=False))
-    with open("output.json", "w", encoding="utf-16") as wf:
-        json.dump(objs, wf, indent=2, ensure_ascii=False)
+        result = parse_ipconfig_file(path)
+        all_results.append(result)
+
+    print(json.dumps(all_results, indent=2, ensure_ascii=False))
+
+    with open("output.json", "w", encoding="utf-16") as f:
+        json.dump(all_results, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
