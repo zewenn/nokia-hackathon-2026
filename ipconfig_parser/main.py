@@ -75,7 +75,7 @@ def parse_ipconfig_file(file_path: Path) -> Dict[str, Any]:
                             else:
                                 current_adapter[found_key] = value
                     else:
-                        current_adapter[found_key] = value
+                        current_adapter[found_key] = value.split("(")[0]
                     last_json_key = found_key
                 else:
                     last_json_key = None
