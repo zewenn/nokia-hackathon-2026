@@ -30,6 +30,7 @@ def get_fee_by_minutes(minutes: int, round_to_hours: bool) -> int:
 def main():
     data = Path("input.txt").read_text(encoding="utf-8")
 
+    print("RENDSZAM\tDIJ")
     for line in data.splitlines()[2:]:
         line_data = line.split("\t\t")
 
@@ -48,8 +49,7 @@ def main():
         diff = leave - arrival
         minutes = math.ceil(diff.total_seconds() / 60)
 
-        print("RENDSZAM\tDIJ")
-        print(f"{plate_number}\t{get_fee_by_minutes(minutes, True)}")
+        print(f"{plate_number}\t\t{get_fee_by_minutes(minutes, True)}")
 
 
 if __name__ == "__main__":
