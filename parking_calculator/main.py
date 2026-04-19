@@ -48,7 +48,7 @@ def main():
         diff = leave - arrival
         minutes = math.ceil(diff.total_seconds() / 60)
 
-        print(f"{get_fee_by_minutes(minutes, True)}Ft")
+        print(f"{plate_number}\t{get_fee_by_minutes(minutes, True)}")
 
 
 if __name__ == "__main__":
