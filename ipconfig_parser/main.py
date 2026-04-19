@@ -23,14 +23,16 @@ label_to_key = {
     "DNS Servers": "dns_servers",
 }
 
+
 def create_empty_adapter(name: str) -> Dict[str, Any]:
     adapter = {"adapter_name": name}
     for key in json_keys:
-        if key in ["dns_servers", "default_gateway"]:
-            adapter[key] = [] # type: ignore
+        if key == "dns_servers":
+            adapter[key] = []  # type: ignore
         else:
             adapter[key] = ""
     return adapter
+
 
 def parse_ipconfig_file(file_path: Path) -> Dict[str, Any]:
     content = file_path.read_text(encoding="utf-16")
@@ -43,11 +45,14 @@ def parse_ipconfig_file(file_path: Path) -> Dict[str, Any]:
         if not line.strip():
             continue
 
-        if not line.startswith((" ", "\t")) and line.strip().endswith(":"):
+        if (
+            not line.startswith(" ")
+            and not line.startswith("\t")
+            and line.strip().endswith(":")
+        ):
             if current_adapter:
-                for k in ["dns_servers", "default_gateway"]:
-                    if not current_adapter[k]:
-                        current_adapter[k] = ""
+                if not current_adapter["dns_servers"]:
+                    current_adapter["dns_servers"] = ""
                 file_data["adapters"].append(current_adapter)
 
             current_adapter = create_empty_adapter(line.strip()[:-1])
@@ -58,32 +63,38 @@ def parse_ipconfig_file(file_path: Path) -> Dict[str, Any]:
             if ":" in line:
                 parts = line.split(":", 1)
                 label = parts[0].replace(".", "").strip()
-                value = parts[1].strip().split("(")[0]
+                value = parts[1].strip()
 
                 found_key = label_to_key.get(label)
 
                 if found_key:
                     if found_key in ["dns_servers", "default_gateway"]:
                         if value:
-                            current_adapter[found_key].append(value)
+                            if found_key == "dns_servers":
+                                current_adapter[found_key].append(value)
+                            else:
+                                current_adapter[found_key] = value
                     else:
-                        current_adapter[found_key] = value
+                        current_adapter[found_key] = value.split("(")[0] if found_key != "description" else value
                     last_json_key = found_key
                 else:
                     last_json_key = None
             else:
                 if last_json_key in ["dns_servers", "default_gateway"]:
-                    val = line.strip().split("(")[0]
+                    val = line.strip()
                     if val:
-                        current_adapter[last_json_key].append(val)
+                        if last_json_key == "dns_servers":
+                            current_adapter[last_json_key].append(val)
+                        else:
+                            current_adapter[last_json_key] += f" {val}"
 
     if current_adapter:
-        for k in ["dns_servers", "default_gateway"]:
-            if not current_adapter[k]:
-                current_adapter[k] = ""
+        if not current_adapter["dns_servers"]:
+            current_adapter["dns_servers"] = ""
         file_data["adapters"].append(current_adapter)
 
     return file_data
+
 
 def main():
     all_results = []
@@ -92,16 +103,14 @@ def main():
         if path.name == "requirements.txt":
             continue
 
-        try:
-            result = parse_ipconfig_file(path)
-            all_results.append(result)
-        except Exception:
-            pass
+        result = parse_ipconfig_file(path)
+        all_results.append(result)
 
     print(json.dumps(all_results, indent=2, ensure_ascii=False))
 
     with open("output.json", "w", encoding="utf-16") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
+
 
 if __name__ == "__main__":
     main()
