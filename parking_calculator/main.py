@@ -50,11 +50,12 @@ def main():
         diff = leave - arrival
         minutes = math.ceil(diff.total_seconds() / 60)
 
-        output += f"{plate_number}\t\t{get_fee_by_minutes(minutes, True)}"
-        print(output)
+        output += f"{plate_number}\t\t{get_fee_by_minutes(minutes, True)}\n"
 
-        with open("output.txt", "w", encoding="utf-8") as wf:
-            wf.write(output)
+    print(output)
+
+    with open("output.txt", "w", encoding="utf-8") as wf:
+        wf.write(output)
 
 
 if __name__ == "__main__":
