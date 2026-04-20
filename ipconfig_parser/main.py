@@ -98,13 +98,13 @@ def main():
 
     base_path = Path(".")
     for path in sorted(base_path.glob("*.txt")):
-        if path.name in ["requirements.txt", "output.json"]:
+        if path.name == "requirements.txt":
             continue
         result = parse_ipconfig_file(path)
         all_results.append(result)
 
     print(json.dumps(all_results, indent=2, ensure_ascii=False))
-    with open("output.json", "w", encoding="utf-8") as f:
+    with open("results.json", "w", encoding="utf-8") as f:
         json.dump(all_results, f, indent=2, ensure_ascii=False)
 
 
